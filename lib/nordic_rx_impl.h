@@ -25,6 +25,7 @@
 #include <boost/crc.hpp>
 #include "bit_shifting_byte_vector.h"
 #include "enhanced_shockburst_packet.h"
+#include "shockburst_packet.h"
 
 namespace gr {
   namespace nordic {
@@ -41,20 +42,29 @@ namespace gr {
       uint8_t m_crc_length;
       uint8_t m_channel; 
       uint8_t m_data_rate;
+      uint8_t m_protocol;
+      uint8_t m_SB_payload_length;
+      uint8_t** m_addresses;
+      uint8_t* m_address_match_len;
 
       // Incoming bit/byte vector
       bit_shifting_byte_vector m_decoded_bits_bytes;
 
       // Enhanced shockburst packet
       enhanced_shockburst_packet * m_enhanced_shockburst;
+      // shockburst packet
+      shockburst_packet * m_shockburst;
 
      public:
 
       // Constructor/destructor
-      nordic_rx_impl(uint8_t channel,
-                     uint8_t address_length,
-                     uint8_t crc_length,
-                     uint8_t data_rate);
+      nordic_rx_impl(const uint8_t channel,
+                     const uint8_t address_length,
+                     const uint8_t crc_length,
+                     const uint8_t data_rate,
+                     const uint8_t protocol,
+                     const uint8_t SB_payload_length,
+		     const std::string &address_match);
       ~nordic_rx_impl();
 
       // Main work method

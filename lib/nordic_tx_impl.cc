@@ -24,32 +24,35 @@
 
 #include <gnuradio/io_signature.h>
 #include <gnuradio/fxpt.h>
+#include <stdio.h>
 #include "nordic_tx_impl.h"
 #include "nordictap.h"
 #include "enhanced_shockburst_packet.h"
+#include "shockburst_packet.h"
 
 namespace gr {
   namespace nordic {
 
     nordic_tx::sptr
-    nordic_tx::make(uint8_t channel_count)
+    nordic_tx::make(uint8_t channel_count, uint8_t protocol)
     {
       return gnuradio::get_initial_sptr
-        (new nordic_tx_impl(channel_count));
+        (new nordic_tx_impl(channel_count, protocol));
     }
 
     /*
      * The private constructor
      */
-    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count)
+    nordic_tx_impl::nordic_tx_impl(uint8_t channel_count, uint8_t protocol)
       : gr::sync_block("nordic_tx",
               gr::io_signature::make(0, 0, 0),
               gr::io_signature::make(1, channel_count, sizeof(uint8_t))),
-        m_channel_count(channel_count)
+        m_channel_count(channel_count),
+        m_protocol(protocol)
     {
       // Register nordictap input, which accepts packets to transmit
       message_port_register_in(pmt::intern("nordictap_in"));
-      set_msg_handler(pmt::intern("nordictap_in"), boost::bind(&nordic_tx_impl::nordictap_message_handler, this, _1));
+      set_msg_handler(pmt::intern("nordictap_in"), boost::bind(&nordic_tx_impl::nordictap_message_handler, this, boost::placeholders::_1));
     }
 
     /*
@@ -63,6 +66,7 @@ namespace gr {
     void nordic_tx_impl::nordictap_message_handler(pmt::pmt_t msg)
     {
       m_tx_queue.push(msg);
+      //printf("Got new message\n");
     }
 
     int
@@ -78,7 +82,7 @@ namespace gr {
         // Get the blob
         std::vector<uint8_t> vec = pmt::u8vector_elements(m_tx_queue.front());
         uint8_t * blob = vec.data();
-
+        
         // Read the channel index
         uint8_t channel = blob[0];
 
@@ -93,44 +97,148 @@ namespace gr {
         uint8_t * payload = new uint8_t[plen];
         memcpy(address, &blob[sizeof(nordictap_header)+1], alen);
         memcpy(payload, &blob[sizeof(nordictap_header)+1 + alen], plen);
-
+	
+	//printf("tx: add_len = %02X\n", header.address_length);
+	//printf("tx: bif_pkt = %02X\n", header.big_packet);
+	//printf("tx: pay_len = %02X\n", header.payload_length);
+	//printf("tx: sec_num = %02X\n", header.sequence_number);
+	//printf("tx: no_ack = %02X\n", header.no_ack);
+	//printf("tx: crc_len = %02X\n", header.crc_length);
+	
+	
         // Build the packet
-        enhanced_shockburst_packet * packet =
-          new enhanced_shockburst_packet(header.address_length,
-                                         header.payload_length,
-                                         header.sequence_number,
-                                         header.no_ack,
-                                         header.crc_length,
-                                         address,
-                                         payload);
+         // ! change to use of base class, shockburst_packet_base* packet = nullptr;
+         //void* packet = nullptr;
+        
+        if(m_protocol == 0) { //printf("ESB\n");
+       
+		enhanced_shockburst_packet * packet =
+		  new enhanced_shockburst_packet(header.address_length,
+		                                 header.big_packet,
+		                                 header.payload_length,
+		                                 header.sequence_number,
+		                                 header.no_ack,
+		                                 header.crc_length,
+		                                 address,
+		                                 payload);
+		// Remove the blob from the queue
+        	m_tx_queue.pop();     
+        	
+        	memset(output_items[channel], 0, packet->bytes_length()*2);
+		// Write the output bytes
+		uint8_t * out = (uint8_t *)output_items[channel];
+		
+		for(int b = 0; b < packet->bytes_length(); b++)
+		//for(int b = 0; b < noutput_items; b++)
+		{
+		  out[b] = packet->bytes()[b];
+		  //printf(" ByteOut = %02X\n", out[b]);
+		  //printf(" ByteIn = %02X\n", packet->bytes()[b]);
+		  //out[packet->bytes_length()*2+b] = packet->bytes()[b];
+		  //out[packet->bytes_length()*2+b] = 0x0;
+		  //printf(" Bytes = %02X\n", out[packet->bytes_length()*2+b]);
+		  //out[packet->bytes_length()*3+b] = packet->bytes()[b];
+		}
+                                    
+		/*for(int b = 0; b < 5; b++)
+		{
+		 out[packet->bytes_length()*2+b] = 0x0;
+		}*/
+		//memcpy(output_items[0],out, packet->bytes_length()*2);
+		// Write zeros to the other channels' buffers
+		for(int c = 0; c < m_channel_count; c++)
+		{
+		  if(c != channel)
+		  {
+		    memset(output_items[c], 0, packet->bytes_length()*2);
+		  }
+		}
+		//printf("Number of output items %d\n", noutput_items);
+		//printf("Channel = %d\n",blob[0]);
+		//printf("Packet length = %d\n",packet->bytes_length()*2);
+		//packet->print();
+		// Cleanup
+		delete[] address;
+		delete[] payload;
+		//printf("Number of items written sob %ld\n", nitems_written(0));
+		add_item_tag(0, nitems_written(0),
+		       pmt::string_to_symbol("tx_sob"),
+		       pmt::PMT_T,
+		       pmt::string_to_symbol(name()));
+		//printf("Number of items written eob %ld\n", nitems_written(0) + packet->bytes_length());
+		add_item_tag(0, nitems_written(0) + packet->bytes_length(),
+		       pmt::string_to_symbol("tx_eob"),
+		       pmt::PMT_T,
+		       pmt::string_to_symbol(name()));
+		int packet_length = packet->bytes_length()*2;
+		//printf("Number of items written %ld\n", nitems_written(0));
+		add_item_tag(0, // Port number
+			nitems_written(0), // Offset
+			pmt::mp("packet_len"), // Key
+			pmt::from_uint64(packet_length) // Value
+			);
+		delete packet; //This is really stupid!
 
-        // Remove the blob from the queue
-        m_tx_queue.pop();
+		// Return the number of bytes produced
+		return packet_length;
+	} else 
+	{ // printf("SB\n");
+        	shockburst_packet * packet =
+		  new shockburst_packet(header.address_length,
+		                                 header.big_packet,
+		                                 header.payload_length,
+		                                 header.sequence_number,
+		                                 header.no_ack,
+		                                 header.crc_length,
+		                                 address,
+		                                 payload);   
+		     
+          	// Remove the blob from the queue
+        	m_tx_queue.pop();
+        	
+        	 memset(output_items[channel], 0, packet->bytes_length()*2);
+		// Write the output bytes
+		uint8_t * out = (uint8_t *)output_items[channel];
+		
+		for(int b = 0; b < packet->bytes_length(); b++)
+		//for(int b = 0; b < noutput_items; b++)
+		{
+		  out[b] = packet->bytes()[b];
+		  //printf(" ByteOut = %02X\n", out[b]);
+		}
+		
+		for(int c = 0; c < m_channel_count; c++)
+		{
+		  if(c != channel)
+		  {
+		    memset(output_items[c], 0, packet->bytes_length()*2);
+		  }
+		}
+		
+		delete[] address;
+		delete[] payload;
+		//printf("Number of items written sob %ld\n", nitems_written(0));
+		add_item_tag(0, nitems_written(0),
+		       pmt::string_to_symbol("tx_sob"),
+		       pmt::PMT_T,
+		       pmt::string_to_symbol(name()));
+		//printf("Number of items written eob %ld\n", nitems_written(0) + packet->bytes_length());
+		add_item_tag(0, nitems_written(0) + packet->bytes_length(),
+		       pmt::string_to_symbol("tx_eob"),
+		       pmt::PMT_T,
+		       pmt::string_to_symbol(name()));
+		int packet_length = packet->bytes_length()*2;
+		//printf("Number of items written %ld\n", nitems_written(0));
+		add_item_tag(0, // Port number
+			nitems_written(0), // Offset
+			pmt::mp("packet_len"), // Key
+			pmt::from_uint64(packet_length) // Value
+			);
+		delete packet; //This is really stupid!
 
-        // Write the output bytes
-        uint8_t * out = (uint8_t *)output_items[channel];
-        for(int b = 0; b < packet->bytes_length(); b++)
-        {
-          out[b] = packet->bytes()[b];
-          out[packet->bytes_length()*2+b] = packet->bytes()[b];
-        }
-
-        // Write zeros to the other channels' buffers
-        for(int c = 0; c < m_channel_count; c++)
-        {
-          if(c != channel)
-          {
-            memset(output_items[c], 0, packet->bytes_length()*2);
-          }
-        }
-
-        // Cleanup
-        delete[] address;
-        delete[] payload;
-        delete packet;
-
-        // Return the number of bytes produced
-        return packet->bytes_length()*2;
+		// Return the number of bytes produced
+		return packet_length;
+	   }
       }
       else
       {

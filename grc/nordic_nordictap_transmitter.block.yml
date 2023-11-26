@@ -1,0 +1,71 @@
+id: nordic_nordictap_transmitter
+label: nordictap_transmitter
+category: '[Nordic]'
+templates:
+  imports: import nordic
+  make: nordic.nordictap_transmitter(${channel_count}, ${address}, ${payload}, ${channel_index}, ${sequence_number}, ${big_packet}, ${data_rate}, ${ack}, ${crc_length})
+parameters:
+- id: channel_count
+  label: Channel Map
+  default: '85'
+  dtype: int_vector 
+- id: address
+  label: Address
+  default: '\x55\x55\x55\x55\x55'
+  dtype: string 
+- id: payload
+  label: Payload
+  default: '\xAA\xAA\xAA\xAA\xAA'
+  dtype: string
+- id: channel_index
+  label: Channel Index
+  default: '0'
+  dtype: int
+- id: sequence_number
+  label: Sequence Number
+  default: '0'
+  dtype: int
+- id: big_packet
+  label: Big Packet
+  default: '0'
+  dtype: int
+- id: data_rate
+  label: Data Rate
+  default: '2'
+  dtype: int
+- id: ack
+  label: ACK
+  default: '0'
+  dtype: int
+- id: crc_length
+  label: CRC Length
+  default: '2'
+  dtype: int
+inputs:
+- label: trig
+  domain: message
+outputs: 
+- label: nordictap_out
+  domain: message
+documentation: |-
+    Nordic Transmitter:
+
+    Channel Map:
+    List of channels. Channel is given by Channel Index
+
+    Address:
+    The adress
+    
+    Payload:
+    Message to send
+    
+    Channel Index:
+    The nordic tx block can output on different channels. The channel index is used by nordic tx block to determine wich output port to use.   
+    
+    Data Rate: 
+    0 for 250K, 1 for 1M, 2 for 2M
+    
+    ACK:
+    To request ack, 1 else 0
+
+file_format: 1

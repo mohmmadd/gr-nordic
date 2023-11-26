@@ -36,7 +36,7 @@ namespace gr {
     class NORDIC_API nordic_tx : virtual public gr::sync_block
     {
      public:
-      typedef boost::shared_ptr<nordic_tx> sptr;
+      typedef std::shared_ptr<nordic_tx> sptr;
 
       /*!
        * \brief Return a shared_ptr to a new instance of nordic::nordic_tx.
@@ -46,7 +46,7 @@ namespace gr {
        * class. nordic::nordic_tx::make is the public interface for
        * creating new instances.
        */
-      static sptr make(uint8_t channel_count=1);
+      static sptr make(uint8_t channel_count=1, uint8_t protocol=0);
     };
 
   } // namespace nordic

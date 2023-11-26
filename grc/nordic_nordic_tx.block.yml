@@ -1,0 +1,42 @@
+id: nordic_nordic_tx
+label: nordic tx
+category: '[Nordic]'
+templates:
+  imports: import nordic
+  make: nordic.nordic_tx(${channel_count}, ${protocol})
+parameters:
+- id: channel_count
+  label: Channel_count
+  default: '1'
+  dtype: int
+- id: protocol
+  label: Protocol
+  default: '0'
+  dtype: enum
+  options: ['0', '1']
+  option_labels: ['ESB', 'SB']
+  option_attributes:
+    dtype: [int, int]
+inputs:
+- label: nordictap_in
+  domain: message
+outputs:
+- label: out
+  domain: stream
+  dtype: byte
+  multiplicity: ${channel_count}
+  
+documentation: |-
+    Nordic receiver:
+
+    Channel_count:
+    Nymber of output channels. The first index of the input message determines on wich output the
+    packet should be sent.
+    
+    Protocol:
+    Shock-Burst (SB) or Enhanced Shock-Burst (ESB)
+    The ESB packet has ha packet control field of 9 bits after the adress, before the payload.
+    The packet control field contains the payload length, therefore the variable Payload length 
+    does not have to be specified for the ESB packet type on the reciever side.
+    
+file_format: 1

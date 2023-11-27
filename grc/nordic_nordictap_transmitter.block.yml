@@ -31,8 +31,12 @@ parameters:
   dtype: int
 - id: data_rate
   label: Data Rate
-  default: '2'
-  dtype: int
+  default: '0'
+  dtype: enum
+  options: ['0', '1', '2']
+  option_labels: ['250kbps', '1mbps', '2mbps']
+  option_attributes:
+    dtype: [int, int, int]
 - id: ack
   label: ACK
   default: '0'
@@ -54,7 +58,7 @@ documentation: |-
     List of channels. Channel is given by Channel Index
 
     Address:
-    The adress
+    The address, most common is a address of length 5.
     
     Payload:
     Message to send

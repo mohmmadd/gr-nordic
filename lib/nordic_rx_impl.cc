@@ -29,6 +29,7 @@
 #include "nordic_rx_impl.h"
 #include "nordictap.h"
 
+
 namespace gr {
   namespace nordic {
 
@@ -59,7 +60,7 @@ namespace gr {
               gr::io_signature::make(1, 1, sizeof(uint8_t)),
               gr::io_signature::make(0, 0, 0)),
               // TODO add functionality to change according to max anticipated packet length
-              m_decoded_bits_bytes(42/*protocol*9 +39*8*//*262*8*/ /* buffer sufficient for max ESB frame length */), // ESB payload can be up to 252 bytes plus header+crc
+              m_decoded_bits_bytes(42*8/*protocol*9 +39*8*//*262*8*/ /* buffer sufficient for max ESB frame length */), // ESB payload can be up to 252 bytes plus header+crc
               m_crc_length(crc_length),
               m_address_length(address_length),
               m_channel(channel),

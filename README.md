@@ -1,4 +1,27 @@
 # gr-nordic
+*This is a fork of BastilleResearch/gr-nordic with some additions from the fork bkerler/gr-nordic.* The original readme is left below.
+The purpose of this fork was to communicate with NRF24l01 modules with an SDR using the gnuradio application.
+
+## Additions made in this fork
+
+- Implemented shockburst protocol (SB). For example used by RF24 arduino library when dynamicpayload is disabled.
+- Updates to the grc blocks 
+- Works with gnuradio 3.10/3.11
+
+## Installation
+'''
+git clone 
+cd gr-nordic
+mkdir build
+cd build
+cmake ../
+make -j2
+sudo make install
+sudo ldconfig
+'''
+
+
+# gr-nordic
 
 GNU Radio module and Wireshark dissector for the Nordic Semiconductor nRF24L Enhanced Shockburst protocol. 
 

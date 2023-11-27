@@ -35,7 +35,7 @@ parameters:
     dtype: [int, int]
 - id: SB_payload_length
   label: SB Payload Length
-  default: '31'
+  default: '32'
   dtype: int
 - id: address_match
   label: Address Match List

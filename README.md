@@ -9,7 +9,7 @@ The purpose of this fork was to communicate with NRF24l01 modules with an SDR us
 - Works with gnuradio 3.10/3.11
 
 ## Installation
-'''
+``
 git clone 
 cd gr-nordic
 mkdir build
@@ -18,7 +18,7 @@ cmake ../
 make -j2
 sudo make install
 sudo ldconfig
-'''
+```
 
 
 # gr-nordic

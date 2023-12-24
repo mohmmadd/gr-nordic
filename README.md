@@ -10,6 +10,8 @@ The purpose of this fork was to communicate with NRF24l01 modules with an SDR us
 
 ## Installation
 ```
+
+sudo apt install python3-bitstring
 git clone 
 cd gr-nordic
 mkdir build
